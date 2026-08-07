@@ -1,0 +1,1565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sam Caribbean Flavor — Sales Tracker</title>
+<style>
+  /* ---------- Tokens ---------- */
+  :root{
+    --ink:#2A211C;
+    --ink-soft:#6E5F52;
+    --paper:#F6EEDC;
+    --card:#FFFFFF;
+    --callaloo:#0F6B52;
+    --callaloo-dark:#0A4E3B;
+    --scotch:#C43C15;
+    --scotch-dark:#9E2F10;
+    --turmeric:#E89B0C;
+    --turmeric-soft:#FBE4B0;
+    --line:#E3D6BC;
+    --shadow:0 2px 10px rgba(42,33,28,.10);
+    --shadow-lg:0 8px 24px rgba(42,33,28,.18);
+    --radius:14px;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:var(--sans);
+    background:var(--paper);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  button,input{font-family:inherit;}
+  h1,h2,h3,p{margin:0;}
+  .money{font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:600;}
+
+  /* ---------- App shell ---------- */
+  #app{
+    max-width:520px;
+    margin:0 auto;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    background:var(--paper);
+    position:relative;
+  }
+
+  /* ---------- Header (hand-painted sign) ---------- */
+  .header{
+    background:var(--callaloo);
+    background-image:linear-gradient(180deg, var(--callaloo) 0%, var(--callaloo-dark) 100%);
+    padding:18px 16px 16px;
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:10px;
+    position:sticky;
+    top:0;
+    z-index:20;
+    box-shadow:var(--shadow);
+    border-bottom:3px solid var(--turmeric);
+  }
+  .sign-eyebrow{
+    display:block;
+    font-size:10.5px;
+    font-weight:700;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--turmeric);
+    margin-bottom:2px;
+  }
+  .sign-title{
+    font-size:15px;
+    font-weight:800;
+    letter-spacing:.01em;
+    text-transform:uppercase;
+    color:#FBF6E9;
+    text-shadow:0 1px 0 rgba(0,0,0,.18);
+    line-height:1.08;
+  }
+  .sign-sub{
+    display:block;
+    margin-top:3px;
+    font-size:12px;
+    color:rgba(251,246,233,.72);
+  }
+  .cash-chip{
+    flex:0 0 auto;
+    background:var(--turmeric);
+    color:var(--ink);
+    border:none;
+    border-radius:999px;
+    padding:8px 14px;
+    display:flex;
+    flex-direction:column;
+    align-items:flex-end;
+    gap:1px;
+    cursor:pointer;
+    box-shadow:var(--shadow);
+  }
+  .cash-chip-label{font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;opacity:.75;}
+  .cash-chip-amount{font-size:15px;}
+
+  /* ---------- Main / view ---------- */
+  #view{
+    flex:1;
+    padding:16px 16px 100px;
+    overflow-y:auto;
+  }
+  .section-title{
+    font-size:13px;
+    font-weight:700;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin:0 0 10px;
+  }
+  .section-title + .section-title{margin-top:20px;}
+
+  /* ---------- Bottom tab bar ---------- */
+  .tabbar{
+    position:sticky;
+    bottom:0;
+    z-index:20;
+    display:flex;
+    background:var(--card);
+    border-top:1px solid var(--line);
+    padding:6px 4px calc(6px + env(safe-area-inset-bottom));
+    box-shadow:0 -2px 10px rgba(42,33,28,.08);
+  }
+  .tab-btn{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:3px;
+    background:none;
+    border:none;
+    padding:7px 2px;
+    border-radius:10px;
+    color:var(--ink-soft);
+    cursor:pointer;
+  }
+  .tab-btn svg{width:21px;height:21px;}
+  .tab-btn span{font-size:10.5px;font-weight:600;letter-spacing:.02em;}
+  .tab-btn.active{color:var(--callaloo);background:rgba(15,107,82,.09);}
+
+  /* ---------- Buttons ---------- */
+  .btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    border:none;
+    border-radius:10px;
+    padding:11px 16px;
+    font-size:14.5px;
+    font-weight:700;
+    cursor:pointer;
+    line-height:1.1;
+  }
+  .btn svg{width:16px;height:16px;flex:0 0 auto;}
+  .btn-primary{background:var(--scotch);color:#fff;}
+  .btn-primary:disabled{background:#D9CDB8;color:#8C7E6C;cursor:not-allowed;}
+  .btn-outline{background:transparent;color:var(--callaloo);border:1.5px solid var(--callaloo);}
+  .btn-ghost{background:var(--card);color:var(--ink);border:1px solid var(--line);}
+  .btn-danger-ghost{background:#FBEAE3;color:var(--scotch-dark);border:1px solid #F0C7B4;}
+  .btn-block{width:100%;}
+  .btn-sm{padding:7px 11px;font-size:12.5px;border-radius:8px;}
+  .btn-row{display:flex;gap:8px;}
+  .icon-btn{
+    background:none;border:none;color:var(--ink-soft);cursor:pointer;
+    padding:6px;border-radius:8px;display:inline-flex;
+  }
+  .icon-btn svg{width:17px;height:17px;}
+  .icon-btn.danger{color:var(--scotch);}
+
+  /* ---------- Cards ---------- */
+  .card{
+    background:var(--card);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:16px;
+  }
+  .card + .card{margin-top:12px;}
+
+  /* ---------- Register hero ---------- */
+  .register-hero{
+    background:var(--card);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:22px 18px;
+    text-align:center;
+  }
+  .register-hero .label{
+    font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);
+  }
+  .register-hero .amount{
+    font-size:42px;
+    margin:6px 0 16px;
+    color:var(--callaloo-dark);
+  }
+  .stat-row{display:flex;gap:10px;margin-top:12px;}
+  .stat{
+    flex:1;background:var(--paper);border-radius:10px;padding:10px 8px;text-align:center;
+  }
+  .stat .stat-num{font-size:18px;}
+  .stat .stat-label{font-size:10.5px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em;margin-top:2px;}
+
+  /* ---------- Categories / Tags ---------- */
+  .category-title{
+    font-size:11.5px;
+    font-weight:800;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:#8A5A05;
+    background:var(--turmeric-soft);
+    display:inline-block;
+    padding:4px 10px;
+    border-radius:999px;
+    margin:20px 0 10px;
+  }
+  .category-title:first-child{margin-top:0;}
+  .cat-tag{
+    font-size:10px;
+    font-weight:700;
+    text-transform:uppercase;
+    background:#f0e9dc;
+    color:var(--ink-soft);
+    padding:2px 6px;
+    border-radius:4px;
+    margin-left:6px;
+    vertical-align:middle;
+  }
+
+  /* ---------- Menu grid (New Sale) ---------- */
+  .menu-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+  }
+  .menu-tile{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:12px;
+    text-align:left;
+    cursor:pointer;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    min-height:66px;
+  }
+  .menu-tile:active{background:var(--turmeric-soft);}
+  .menu-tile.selected{border-color:var(--callaloo);box-shadow:0 0 0 2px rgba(15,107,82,.16);background:rgba(15,107,82,.06);}
+  .menu-tile .item-name{font-size:13.5px;font-weight:700;line-height:1.2;}
+  .menu-tile .item-price{font-size:14px;color:var(--callaloo-dark);}
+  .menu-tile.add-custom{
+    border:1.5px dashed var(--ink-soft);
+    background:transparent;
+    align-items:center;
+    justify-content:center;
+    color:var(--ink-soft);
+    flex-direction:row;
+  }
+  .menu-tile.add-custom svg{width:16px;height:16px;}
+
+  .empty-hint{
+    color:var(--ink-soft);
+    font-size:13.5px;
+    text-align:center;
+    padding:18px 10px;
+    border:1.5px dashed var(--line);
+    border-radius:12px;
+  }
+
+  /* ---------- Ticket / receipt style card ---------- */
+  .ticket{
+    position:relative;
+    background:var(--card);
+    border-radius:10px;
+    box-shadow:var(--shadow);
+    padding:14px 16px;
+    margin:0 4px 14px;
+  }
+  .ticket::before,.ticket::after{
+    content:"";
+    position:absolute;
+    top:50%;
+    transform:translateY(-50%);
+    width:18px;height:18px;
+    background:var(--paper);
+    border-radius:50%;
+  }
+  .ticket::before{left:-9px;}
+  .ticket::after{right:-9px;}
+  .ticket-row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
+  .ticket-time{font-size:11px;color:var(--ink-soft);}
+  .ticket-total{font-size:16px;}
+  .ticket-dash{
+    border-top:1.5px dashed var(--line);
+    margin:9px 0;
+  }
+  .ticket-line{display:flex;justify-content:space-between;font-size:13px;padding:2px 0;color:var(--ink);}
+  .ticket-line .qty{color:var(--ink-soft);margin-right:4px;}
+  .ticket-foot{display:flex;justify-content:space-between;align-items:center;margin-top:8px;}
+  .tag{
+    font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+    padding:3px 8px;border-radius:999px;
+  }
+  .tag-cash{background:var(--turmeric-soft);color:#8A5A05;}
+  .tag-card{background:#DCEAF0;color:#1C6478;}
+  .tag-adj-add{background:#DDEFE4;color:var(--callaloo-dark);}
+  .tag-adj-remove{background:#FBEAE3;color:var(--scotch-dark);}
+
+  .day-header{
+    display:flex;justify-content:space-between;align-items:baseline;
+    margin:18px 4px 10px;
+  }
+  .day-header:first-child{margin-top:0;}
+  .day-header .day-label{font-size:13px;font-weight:700;color:var(--ink);}
+  .day-header .day-total{font-size:12.5px;color:var(--ink-soft);}
+
+  /* ---------- Cart (New Sale) ---------- */
+  .cart-line{
+    display:flex;align-items:center;gap:8px;
+    padding:8px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .cart-line:last-child{border-bottom:none;}
+  .cart-line .name{flex:1;font-size:13.5px;font-weight:600;}
+  .qty-ctrl{display:flex;align-items:center;gap:6px;}
+  .qty-btn{
+    width:24px;height:24px;border-radius:7px;border:1px solid var(--line);
+    background:var(--paper);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink);
+  }
+  .qty-btn svg{width:12px;height:12px;}
+  .qty-num{font-size:13px;min-width:14px;text-align:center;}
+  .line-price{width:64px;text-align:right;font-size:13.5px;}
+  .cart-total-row{
+    display:flex;justify-content:space-between;align-items:baseline;
+    padding-top:10px;margin-top:6px;border-top:2px solid var(--ink);
+  }
+  .cart-total-row .label{font-size:14px;font-weight:700;}
+  .cart-total-row .amount{font-size:22px;}
+
+  /* ---------- Payment ---------- */
+  .pay-toggle{display:flex;gap:8px;margin-bottom:12px;}
+  .pay-opt{
+    flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--line);
+    background:var(--card);text-align:center;font-size:13px;font-weight:700;color:var(--ink-soft);cursor:pointer;
+  }
+  .pay-opt.active{border-color:var(--callaloo);color:var(--callaloo);background:rgba(15,107,82,.07);}
+  .field-label{font-size:12px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;display:block;}
+  .cash-input-wrap{position:relative;margin-bottom:10px;}
+  .cash-input-wrap .dollar{
+    position:absolute;left:12px;top:50%;transform:translateY(-50%);font-family:var(--mono);color:var(--ink-soft);font-size:17px;
+  }
+  input.cash-input{
+    width:100%;padding:12px 12px 12px 26px;border-radius:10px;border:1.5px solid var(--line);
+    font-family:var(--mono);font-size:19px;font-weight:600;
+  }
+  input.cash-input:focus{outline:2px solid var(--callaloo);outline-offset:1px;}
+  .quick-row{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px;}
+  .quick-btn{
+    padding:7px 11px;border-radius:8px;border:1px solid var(--line);background:var(--paper);
+    font-size:12.5px;font-weight:700;cursor:pointer;color:var(--ink);
+  }
+  .change-box{border-radius:12px;padding:14px;margin-bottom:14px;}
+  .change-box.ok{background:#E4F3E9;}
+  .change-box.warn{background:#FBEAE3;}
+  .change-box .cb-label{font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;}
+  .change-box.ok .cb-label{color:var(--callaloo-dark);}
+  .change-box.warn .cb-label{color:var(--scotch-dark);}
+  .change-box .cb-amount{font-size:28px;margin-top:2px;}
+  .change-box.ok .cb-amount{color:var(--callaloo-dark);}
+  .change-box.warn .cb-amount{color:var(--scotch-dark);}
+  .breakdown{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+  .chip{
+    background:#fff;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:600;
+    border:1px solid rgba(0,0,0,.06);
+  }
+
+  .sticky-cta{
+    position:sticky;bottom:0px;z-index:15;
+    padding:8px 0;
+    background:var(--paper);
+  }
+
+  .selection-actions{
+    position:fixed;
+    left:0;
+    right:0;
+    bottom:calc(56px + env(safe-area-inset-bottom));
+    z-index:30;
+    background:var(--paper);
+    padding:8px 16px 8px;
+    box-shadow:0 -4px 18px rgba(42,33,28,.12);
+  }
+  .selection-actions .btn-row{display:flex;gap:10px;}
+  .selection-actions .btn-block{flex:1;}
+  .selection-actions .btn-outline{flex:1;}
+
+  /* ---------- Forms (modals) ---------- */
+  .form-group{margin-bottom:14px;}
+  .form-group label{display:block;font-size:12.5px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;}
+  .form-group input[type=text],.form-group input[type=number]{
+    width:100%;padding:10px 11px;border-radius:9px;border:1.5px solid var(--line);font-size:15px;
+  }
+  .form-group input:focus{outline:2px solid var(--callaloo);outline-offset:1px;}
+  .form-hint{font-size:12px;color:var(--ink-soft);margin-top:-8px;margin-bottom:14px;}
+
+  /* ---------- Modal ---------- */
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(20,15,10,0);
+    display:flex;align-items:flex-end;justify-content:center;
+    z-index:100;
+    transition:background .18s ease;
+    pointer-events:none;
+  }
+  .modal-overlay.open{background:rgba(20,15,10,.42);pointer-events:auto;}
+  .modal-panel{
+    background:var(--paper);
+    width:100%;max-width:520px;
+    border-radius:18px 18px 0 0;
+    padding:18px 18px calc(18px + env(safe-area-inset-bottom));
+    box-shadow:var(--shadow-lg);
+    transform:translateY(100%);
+    transition:transform .22s ease;
+    max-height:85vh;
+    overflow-y:auto;
+  }
+  .modal-overlay.open .modal-panel{transform:translateY(0);}
+  .modal-title{font-size:16.5px;font-weight:800;margin-bottom:14px;}
+  .modal-footer{display:flex;gap:9px;margin-top:6px;}
+  .modal-footer .btn{flex:1;}
+
+  /* ---------- Toast ---------- */
+  #toast{
+    position:fixed;left:50%;bottom:88px;
+    transform:translate(-50%,20px);
+    background:var(--ink);color:#fff;
+    padding:10px 18px;border-radius:999px;
+    font-size:13px;font-weight:600;
+    box-shadow:var(--shadow-lg);
+    opacity:0;
+    transition:opacity .2s ease, transform .2s ease;
+    pointer-events:none;
+    z-index:200;
+    max-width:88%;
+    text-align:center;
+  }
+  #toast.show{opacity:1;transform:translate(-50%,0);}
+
+  @media (prefers-reduced-motion: reduce){
+    .modal-panel,#toast,.modal-overlay{transition:none;}
+  }
+</style>
+</head>
+<body>
+  <div id="app">
+    <header class="header">
+      <div class="sign">
+        <span class="sign-eyebrow">Family Kitchen</span>
+        <h1 class="sign-title">Sam Caribbean Flavor</h1>
+        <span class="sign-sub">Sales Tracker</span>
+      </div>
+      <button class="cash-chip" data-action="switch-tab" data-tab="register">
+        <span class="cash-chip-label">Register</span>
+        <span class="cash-chip-amount money" id="headerCash">$0.00</span>
+      </button>
+    </header>
+    <main id="view"></main>
+    <nav class="tabbar">
+      <button class="tab-btn" data-action="switch-tab" data-tab="register" id="navRegister"></button>
+      <button class="tab-btn" data-action="switch-tab" data-tab="sale" id="navSale"></button>
+      <button class="tab-btn" data-action="switch-tab" data-tab="history" id="navHistory"></button>
+      <button class="tab-btn" data-action="switch-tab" data-tab="menu" id="navMenu"></button>
+    </nav>
+  </div>
+  <div id="modalRoot"></div>
+  <div id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ================= Icons ================= */
+  var ICONS = {
+    cash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 10v.01M18 14v.01"/></svg>',
+    plusCircle:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>',
+    clock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+    list:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h12M8 12h12M8 18h12"/><path d="M3 6h.01M3 12h.01M3 18h.01"/></svg>',
+    edit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>',
+    trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>',
+    x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+    minus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14"/></svg>',
+    plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>'
+  };
+
+  /* ================= Standard Local Storage ================= */
+  function storageGet(key, fallback){
+    return Promise.resolve().then(function(){
+      try {
+        var val = localStorage.getItem(key);
+        return val ? JSON.parse(val) : fallback;
+      } catch(e) { return fallback; }
+    });
+  }
+  function storageSet(key, value){
+    try{
+      localStorage.setItem(key, JSON.stringify(value));
+    }catch(e){ console.error('Storage set failed', key, e); }
+  }
+
+  /* ================= State ================= */
+  var state = {
+    menu:[],
+    transactions:[],   // {id,time,items:[{name,price,qty}],total,payment,cashGiven,change}
+    adjustments:[],    // {id,time,amount,note}
+    register:{amount:0},
+    cart:[],           // {id,name,price,qty}
+    selectedItemIds: [],
+    tab:'sale',
+    paymentMethod:'cash',
+    cashGivenInput:'',
+    loaded:false
+  };
+
+  function genId(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+
+  /* ================= Utils ================= */
+  function escapeHTML(s){
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+  function toCents(n){ return Math.round((Number(n)||0) * 100); }
+  function formatMoney(n){
+    var v = Math.round((Number(n)||0) * 100) / 100;
+    if (Object.is(v, -0)) v = 0;
+    return (v < 0 ? '-$' : '$') + Math.abs(v).toFixed(2);
+  }
+  function fmtTime(iso){
+    var d = new Date(iso);
+    return d.toLocaleTimeString(undefined, {hour:'numeric', minute:'2-digit'});
+  }
+  function dayKey(iso){
+    var d = new Date(iso);
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+  function dayLabel(key){
+    var today = dayKey(new Date().toISOString());
+    var yd = new Date(); yd.setDate(yd.getDate()-1);
+    var yesterday = dayKey(yd.toISOString());
+    if (key === today) return 'Today';
+    if (key === yesterday) return 'Yesterday';
+    var parts = key.split('-').map(Number);
+    var d = new Date(parts[0], parts[1]-1, parts[2]);
+    return d.toLocaleDateString(undefined, {weekday:'short', month:'short', day:'numeric'});
+  }
+  function cartTotal(){
+    return state.cart.reduce(function(s,i){ return s + i.price * i.qty; }, 0);
+  }
+
+  function selectedItems(){
+    return state.menu.filter(function(item){ return state.selectedItemIds.indexOf(item.id) !== -1; });
+  }
+
+  function selectedTotal(){
+    return selectedItems().reduce(function(sum,item){ return sum + item.price; }, 0);
+  }
+
+  function toggleSelectedItem(id){
+    var idx = state.selectedItemIds.indexOf(id);
+    if (idx === -1) state.selectedItemIds.push(id);
+    else state.selectedItemIds.splice(idx, 1);
+    render();
+  }
+
+  function clearSelectedItems(){
+    state.selectedItemIds = [];
+    render();
+  }
+
+  var BILL_DENOMS = [
+    {cents:10000,label:'$100 bill'},
+    {cents:5000,label:'$50 bill'},
+    {cents:2000,label:'$20 bill'},
+    {cents:1000,label:'$10 bill'},
+    {cents:500,label:'$5 bill'},
+    {cents:100,label:'$1 bill'},
+    {cents:25,label:'quarter'},
+    {cents:10,label:'dime'},
+    {cents:5,label:'nickel'},
+    {cents:1,label:'penny'}
+  ];
+  function billBreakdown(changeCents){
+    var remaining = changeCents;
+    var parts = [];
+    BILL_DENOMS.forEach(function(d){
+      var count = Math.floor(remaining / d.cents);
+      if (count > 0){
+        parts.push({count:count, label:d.label});
+        remaining -= count * d.cents;
+      }
+    });
+    return parts;
+  }
+
+  /* ================= Init ================= */
+  function init(){
+    Promise.all([
+      storageGet('sam-menu', null),
+      storageGet('sam-transactions', []),
+      storageGet('sam-adjustments', []),
+      storageGet('sam-register', null)
+    ]).then(function(results){
+      var menu = results[0], transactions = results[1], adjustments = results[2], register = results[3];
+      state.menu = menu || [];
+      state.transactions = transactions || [];
+      state.adjustments = adjustments || [];
+      state.register = register || {amount:0};
+      state.loaded = true;
+      render();
+    });
+  }
+
+  /* ================= Actions: cart ================= */
+  function addMenuItemToCart(item){
+    var line = state.cart.find(function(c){ return c.id === item.id; });
+    if (line){ line.qty += 1; }
+    else { state.cart.push({id:item.id, name:item.name, price:item.price, qty:1}); }
+    render();
+  }
+  function addCustomToCart(name, price){
+    state.cart.push({id:'custom-'+genId(), name:name, price:price, qty:1});
+    render();
+  }
+  function changeQty(cartId, delta){
+    var line = state.cart.find(function(c){ return c.id === cartId; });
+    if (!line) return;
+    line.qty += delta;
+    if (line.qty <= 0){
+      state.cart = state.cart.filter(function(c){ return c.id !== cartId; });
+    }
+    render();
+  }
+  function removeCartLine(cartId){
+    state.cart = state.cart.filter(function(c){ return c.id !== cartId; });
+    render();
+  }
+  function resetSaleForm(){
+    state.cart = [];
+    state.paymentMethod = 'cash';
+    state.cashGivenInput = '';
+  }
+
+  /* ================= Actions: sale / register ================= */
+  function completeSale(){
+    var total = cartTotal();
+    if (total <= 0 || state.cart.length === 0) return;
+    var payment = state.paymentMethod;
+    var given = payment === 'cash' ? (parseFloat(state.cashGivenInput) || 0) : total;
+    if (payment === 'cash' && toCents(given) < toCents(total)) return;
+
+    var tx = {
+      id:genId(),
+      time:new Date().toISOString(),
+      items: state.cart.map(function(c){ return {name:c.name, price:c.price, qty:c.qty}; }),
+      total: Math.round(total*100)/100,
+      payment: payment,
+      cashGiven: payment === 'cash' ? Math.round(given*100)/100 : null,
+      change: payment === 'cash' ? Math.round((given-total)*100)/100 : null
+    };
+    state.transactions.push(tx);
+    state.register.amount = Math.round((state.register.amount + total)*100)/100;
+    storageSet('sam-transactions', state.transactions);
+    storageSet('sam-register', state.register);
+    resetSaleForm();
+    render();
+    showToast('Sale saved — ' + formatMoney(tx.total));
+  }
+
+  function deleteTransaction(id){
+    var tx = state.transactions.find(function(t){ return t.id === id; });
+    if (!tx) return;
+    openModal({
+      title:'Delete this sale?',
+      bodyHTML:'<p style="font-size:14px;color:var(--ink-soft);line-height:1.5;">This removes ' + formatMoney(tx.total) + ' from your register total and can\'t be undone.</p>',
+      primaryLabel:'Delete sale',
+      primaryDanger:true,
+      onPrimary:function(close){
+        state.transactions = state.transactions.filter(function(t){ return t.id !== id; });
+        state.register.amount = Math.round((state.register.amount - tx.total)*100)/100;
+        storageSet('sam-transactions', state.transactions);
+        storageSet('sam-register', state.register);
+        close();
+        render();
+        showToast('Sale deleted');
+      }
+    });
+  }
+
+  function deleteAdjustment(id){
+    var adj = state.adjustments.find(function(a){ return a.id === id; });
+    if (!adj) return;
+    openModal({
+      title:'Delete this entry?',
+      bodyHTML:'<p style="font-size:14px;color:var(--ink-soft);line-height:1.5;">This reverses ' + formatMoney(adj.amount) + ' on your register total.</p>',
+      primaryLabel:'Delete entry',
+      primaryDanger:true,
+      onPrimary:function(close){
+        state.adjustments = state.adjustments.filter(function(a){ return a.id !== id; });
+        state.register.amount = Math.round((state.register.amount - adj.amount)*100)/100;
+        storageSet('sam-adjustments', state.adjustments);
+        storageSet('sam-register', state.register);
+        close();
+        render();
+        showToast('Entry deleted');
+      }
+    });
+  }
+
+  function setRegisterAmount(amount){
+    state.register.amount = Math.round(amount*100)/100;
+    storageSet('sam-register', state.register);
+  }
+  function addAdjustment(amount, note){
+    var adj = {id:genId(), time:new Date().toISOString(), amount:Math.round(amount*100)/100, note: note || (amount >= 0 ? 'Cash added' : 'Cash removed')};
+    state.adjustments.push(adj);
+    state.register.amount = Math.round((state.register.amount + amount)*100)/100;
+    storageSet('sam-adjustments', state.adjustments);
+    storageSet('sam-register', state.register);
+  }
+
+  /* ================= Actions: menu ================= */
+  function addMenuItem(name, price, category){
+    state.menu.push({id:genId(), name:name, price:price, category:category || 'Other'});
+    storageSet('sam-menu', state.menu);
+  }
+  function updateMenuItem(id, name, price, category){
+    var item = state.menu.find(function(m){ return m.id === id; });
+    if (!item) return;
+    item.name = name; item.price = price; item.category = category || 'Other';
+    storageSet('sam-menu', state.menu);
+  }
+  function deleteMenuItem(id){
+    openModal({
+      title:'Remove this item?',
+      bodyHTML:'<p style="font-size:14px;color:var(--ink-soft);line-height:1.5;">It will no longer show up when starting a new sale. Past sales keep their own record.</p>',
+      primaryLabel:'Remove item',
+      primaryDanger:true,
+      onPrimary:function(close){
+        state.menu = state.menu.filter(function(m){ return m.id !== id; });
+        storageSet('sam-menu', state.menu);
+        close();
+        render();
+      }
+    });
+  }
+
+  /* ================= Toast ================= */
+  var toastTimer = null;
+  function showToast(msg){
+    var el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ el.classList.remove('show'); }, 2200);
+  }
+
+  /* ================= Modal ================= */
+  var currentModal = null;
+  function openModal(opts){
+    currentModal = opts;
+    var root = document.getElementById('modalRoot');
+    root.innerHTML =
+      '<div class="modal-overlay" id="modalOverlay">' +
+        '<div class="modal-panel">' +
+          '<h3 class="modal-title">' + escapeHTML(opts.title) + '</h3>' +
+          '<div id="modalBody">' + opts.bodyHTML + '</div>' +
+          '<div class="modal-footer">' +
+            '<button class="btn btn-ghost" id="modalSecondary">' + escapeHTML(opts.secondaryLabel || 'Cancel') + '</button>' +
+            '<button class="btn ' + (opts.primaryDanger ? 'btn-primary' : 'btn-primary') + '" id="modalPrimary">' + escapeHTML(opts.primaryLabel || 'Save') + '</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    var overlay = document.getElementById('modalOverlay');
+    requestAnimationFrame(function(){ overlay.classList.add('open'); });
+    document.getElementById('modalSecondary').addEventListener('click', closeModal);
+    overlay.addEventListener('click', function(e){ if (e.target === overlay) closeModal(); });
+    document.getElementById('modalPrimary').addEventListener('click', function(){
+      opts.onPrimary(closeModal);
+    });
+    if (opts.onOpen) opts.onOpen();
+  }
+  function closeModal(){
+    var overlay = document.getElementById('modalOverlay');
+    if (!overlay){ document.getElementById('modalRoot').innerHTML=''; return; }
+    overlay.classList.remove('open');
+    setTimeout(function(){ document.getElementById('modalRoot').innerHTML = ''; }, 180);
+    currentModal = null;
+  }
+
+  function focusField(id){
+    setTimeout(function(){
+      var el = document.getElementById(id);
+      if (el){ el.focus(); if (el.select) el.select(); }
+    }, 60);
+  }
+
+  /* ================= Modal openers ================= */
+  
+  function openCheckoutModal() {
+    var total = cartTotal();
+    state.paymentMethod = 'cash';
+    state.cashGivenInput = '';
+
+    var bodyHTML = '<div class="pay-toggle">' +
+      '<button class="pay-opt active" data-action="set-payment" data-method="cash">Cash</button>' +
+      '<button class="pay-opt" data-action="set-payment" data-method="card">Card / Other</button>' +
+      '</div>' +
+      '<div id="cashPaymentSection">' +
+        '<label class="field-label" for="cashGivenInput">Cash received</label>' +
+        '<div class="cash-input-wrap"><span class="dollar">$</span>' +
+        '<input class="cash-input" type="number" inputmode="decimal" step="0.01" min="0" id="cashGivenInput" placeholder="0.00"></div>' +
+        '<div class="quick-row">' +
+        '<button class="quick-btn" data-action="quick-cash" data-value="exact">Exact (' + formatMoney(total) + ')</button>' +
+        '<button class="quick-btn" data-action="quick-cash" data-value="20">$20</button>' +
+        '<button class="quick-btn" data-action="quick-cash" data-value="50">$50</button>' +
+        '<button class="quick-btn" data-action="quick-cash" data-value="100">$100</button>' +
+        '</div>' +
+        '<div id="changeBox"></div>' +
+      '</div>';
+
+    openModal({
+      title: 'Payment — ' + formatMoney(total),
+      bodyHTML: bodyHTML,
+      primaryLabel: 'Complete sale',
+      onOpen: function(){
+        updateChangeDisplay();
+        focusField('cashGivenInput');
+      },
+      onPrimary: function(close){
+         var totalAmt = cartTotal();
+         var pmt = state.paymentMethod;
+         var given = pmt === 'cash' ? (parseFloat(state.cashGivenInput) || 0) : totalAmt;
+         if (pmt === 'cash' && toCents(given) < toCents(totalAmt)) {
+             showToast("Need more cash to complete order.");
+             return;
+         }
+         completeSale();
+         close();
+      }
+    });
+  }
+
+  function openCustomItemModal(){
+    openModal({
+      title:'Add a custom item',
+      bodyHTML:
+        '<div class="form-group"><label for="ciName">Item name</label>' +
+        '<input type="text" id="ciName" placeholder="e.g. Extra sauce"></div>' +
+        '<div class="form-group"><label for="ciPrice">Price</label>' +
+        '<input type="number" id="ciPrice" inputmode="decimal" step="0.01" min="0" placeholder="0.00"></div>',
+      primaryLabel:'Add to sale',
+      onOpen:function(){ focusField('ciName'); },
+      onPrimary:function(close){
+        var name = (document.getElementById('ciName').value || 'Custom item').trim();
+        var price = parseFloat(document.getElementById('ciPrice').value);
+        if (!(price > 0)) { document.getElementById('ciPrice').focus(); return; }
+        addCustomToCart(name || 'Custom item', Math.round(price*100)/100);
+        close();
+      }
+    });
+  }
+
+  function openSelectedItemsPaymentModal(){
+    var items = selectedItems();
+    if (!items.length) return;
+    var paymentMethod = 'cash';
+    var cashGiven = '';
+
+    function subtotal(){
+      return selectedTotal();
+    }
+    function refresh(){
+      var totalEl = document.getElementById('selectedTotal');
+      if (totalEl) totalEl.textContent = formatMoney(subtotal());
+      var cashSection = document.getElementById('selectedCashSection');
+      if (cashSection) cashSection.style.display = paymentMethod === 'cash' ? 'block' : 'none';
+      var changeBox = document.getElementById('selectedChangeBox');
+      if (changeBox) changeBox.innerHTML = paymentMethod === 'cash' ? buildChangeHTML(subtotal(), cashGiven || 0) : '';
+      document.querySelectorAll('[data-action="selected-set-payment"]').forEach(function(btn){
+        btn.classList.toggle('active', btn.dataset.method === paymentMethod);
+      });
+    }
+
+    var itemRows = items.map(function(item){
+      return '<div class="ticket-line"><span>' + escapeHTML(item.name) + '</span><span class="money">' + formatMoney(item.price) + '</span></div>';
+    }).join('');
+
+    openModal({
+      title: 'Payment',
+      bodyHTML:
+        '<div>' + itemRows + '</div>' +
+        '<div class="ticket-total-row" style="margin-top:12px;">' +
+          '<span class="label">Total</span><span id="selectedTotal" class="amount money">' + formatMoney(subtotal()) + '</span>' +
+        '</div>' +
+        '<div class="pay-toggle" style="margin-top:16px;">' +
+          '<button class="pay-opt active" type="button" data-action="selected-set-payment" data-method="cash">Cash</button>' +
+          '<button class="pay-opt" type="button" data-action="selected-set-payment" data-method="card">Card / Other</button>' +
+        '</div>' +
+        '<div id="selectedCashSection">' +
+          '<label class="field-label" for="selectedCashGivenInput">Cash received</label>' +
+          '<div class="cash-input-wrap"><span class="dollar">$</span>' +
+          '<input class="cash-input" type="number" inputmode="decimal" step="0.01" min="0" id="selectedCashGivenInput" placeholder="0.00"></div>' +
+          '<div class="quick-row">' +
+            '<button class="quick-btn" type="button" data-action="selected-quick-cash" data-value="exact">Exact</button>' +
+            '<button class="quick-btn" type="button" data-action="selected-quick-cash" data-value="20">$20</button>' +
+            '<button class="quick-btn" type="button" data-action="selected-quick-cash" data-value="50">$50</button>' +
+            '<button class="quick-btn" type="button" data-action="selected-quick-cash" data-value="100">$100</button>' +
+          '</div>' +
+          '<div id="selectedChangeBox"></div>' +
+        '</div>',
+      primaryLabel:'Charge',
+      onOpen:function(){
+        var modalBody = document.getElementById('modalBody');
+        if (!modalBody) return;
+
+        modalBody.addEventListener('click', function(evt){
+          var btn = evt.target.closest('[data-action]');
+          if (!btn) return;
+          var action = btn.dataset.action;
+          if (action === 'selected-set-payment'){
+            paymentMethod = btn.dataset.method || 'cash';
+            refresh();
+          }
+          if (action === 'selected-quick-cash'){
+            var value = btn.dataset.value;
+            cashGiven = value === 'exact' ? subtotal().toFixed(2) : String(Number(value));
+            var ci = document.getElementById('selectedCashGivenInput');
+            if (ci) ci.value = cashGiven;
+            refresh();
+          }
+        });
+
+        var cashInput = document.getElementById('selectedCashGivenInput');
+        if (cashInput){
+          cashInput.addEventListener('input', function(evt){
+            cashGiven = evt.target.value;
+            refresh();
+          });
+        }
+
+        focusField('selectedCashGivenInput');
+        refresh();
+      },
+      onPrimary:function(close){
+        var total = subtotal();
+        if (paymentMethod === 'cash' && toCents(cashGiven) < toCents(total)){
+          showToast('Need more cash to complete order.');
+          return;
+        }
+        var tx = {
+          id: genId(),
+          time: new Date().toISOString(),
+          items: items.map(function(item){ return {name:item.name, price:item.price, qty:1}; }),
+          total: Math.round(total * 100) / 100,
+          payment: paymentMethod,
+          cashGiven: paymentMethod === 'cash' ? Math.round(Number(cashGiven) * 100) / 100 : null,
+          change: paymentMethod === 'cash' ? Math.round((Number(cashGiven) - total) * 100) / 100 : null
+        };
+        state.transactions.push(tx);
+        state.register.amount = Math.round((state.register.amount + tx.total) * 100) / 100;
+        state.selectedItemIds = [];
+        storageSet('sam-transactions', state.transactions);
+        storageSet('sam-register', state.register);
+        render();
+        close();
+        showToast('Sale saved — ' + formatMoney(tx.total));
+      }
+    });
+  }
+
+  function openSaleItemModal(item){
+    var qty = 1;
+    var paymentMethod = 'cash';
+    var cashGiven = '';
+
+    function saleTotal(){
+      return Math.round(item.price * qty * 100) / 100;
+    }
+    function refreshSaleModal(){
+      var qtyEl = document.getElementById('saleQty');
+      if (qtyEl) qtyEl.textContent = qty;
+      var totalEl = document.getElementById('saleTotal');
+      if (totalEl) totalEl.textContent = formatMoney(saleTotal());
+      var cashSection = document.getElementById('saleCashSection');
+      if (cashSection) cashSection.style.display = paymentMethod === 'cash' ? 'block' : 'none';
+      var changeBox = document.getElementById('saleChangeBox');
+      if (changeBox) {
+        changeBox.innerHTML = paymentMethod === 'cash' ? buildChangeHTML(saleTotal(), cashGiven || 0) : '';
+      }
+      var payButtons = document.querySelectorAll('[data-action="sale-set-payment"]');
+      payButtons.forEach(function(btn){
+        btn.classList.toggle('active', btn.dataset.method === paymentMethod);
+      });
+    }
+
+    openModal({
+      title: item.name,
+      bodyHTML:
+        '<div style="margin-bottom:16px;"><div class="item-price money">' + formatMoney(item.price) + '</div></div>' +
+        '<div class="form-group"><label class="field-label">Quantity</label>' +
+        '<div class="quick-row" style="gap:8px;align-items:center;">' +
+          '<button class="quick-btn" type="button" data-action="sale-item-qty" data-delta="-1">-</button>' +
+          '<span id="saleQty" style="min-width:28px;display:inline-flex;align-items:center;justify-content:center;font-weight:700;">1</span>' +
+          '<button class="quick-btn" type="button" data-action="sale-item-qty" data-delta="1">+</button>' +
+        '</div></div>' +
+        '<div class="form-group"><label class="field-label">Total</label>' +
+        '<div id="saleTotal" class="item-price money">' + formatMoney(item.price) + '</div></div>' +
+        '<div class="pay-toggle">' +
+          '<button class="pay-opt active" type="button" data-action="sale-set-payment" data-method="cash">Cash</button>' +
+          '<button class="pay-opt" type="button" data-action="sale-set-payment" data-method="card">Card / Other</button>' +
+        '</div>' +
+        '<div id="saleCashSection">' +
+          '<label class="field-label" for="saleCashGivenInput">Cash received</label>' +
+          '<div class="cash-input-wrap"><span class="dollar">$</span>' +
+          '<input class="cash-input" type="number" inputmode="decimal" step="0.01" min="0" id="saleCashGivenInput" placeholder="0.00"></div>' +
+          '<div class="quick-row">' +
+            '<button class="quick-btn" type="button" data-action="sale-quick-cash" data-value="exact">Exact</button>' +
+            '<button class="quick-btn" type="button" data-action="sale-quick-cash" data-value="20">$20</button>' +
+            '<button class="quick-btn" type="button" data-action="sale-quick-cash" data-value="50">$50</button>' +
+            '<button class="quick-btn" type="button" data-action="sale-quick-cash" data-value="100">$100</button>' +
+          '</div>' +
+          '<div id="saleChangeBox"></div>' +
+        '</div>',
+      primaryLabel:'Charge item',
+      onOpen:function(){
+        var modalBody = document.getElementById('modalBody');
+        if (!modalBody) return;
+
+        modalBody.addEventListener('click', function(evt){
+          var btn = evt.target.closest('[data-action]');
+          if (!btn) return;
+          var action = btn.dataset.action;
+
+          if (action === 'sale-item-qty'){
+            var delta = Number(btn.dataset.delta) || 0;
+            qty = Math.max(1, qty + delta);
+            refreshSaleModal();
+          }
+          if (action === 'sale-set-payment'){
+            paymentMethod = btn.dataset.method || 'cash';
+            refreshSaleModal();
+          }
+          if (action === 'sale-quick-cash'){
+            var value = btn.dataset.value;
+            cashGiven = value === 'exact' ? saleTotal().toFixed(2) : String(Number(value));
+            var ci = document.getElementById('saleCashGivenInput');
+            if (ci) ci.value = cashGiven;
+            refreshSaleModal();
+          }
+        });
+
+        var cashInput = document.getElementById('saleCashGivenInput');
+        if (cashInput){
+          cashInput.addEventListener('input', function(evt){
+            cashGiven = evt.target.value;
+            refreshSaleModal();
+          });
+        }
+
+        focusField('saleCashGivenInput');
+        refreshSaleModal();
+      },
+      onPrimary:function(close){
+        var total = saleTotal();
+        if (paymentMethod === 'cash' && toCents(cashGiven) < toCents(total)){
+          showToast('Need more cash to complete order.');
+          return;
+        }
+        var tx = {
+          id: genId(),
+          time: new Date().toISOString(),
+          items: [{name: item.name, price: item.price, qty: qty}],
+          total: total,
+          payment: paymentMethod,
+          cashGiven: paymentMethod === 'cash' ? Math.round(Number(cashGiven) * 100) / 100 : null,
+          change: paymentMethod === 'cash' ? Math.round((Number(cashGiven) - total) * 100) / 100 : null
+        };
+        state.transactions.push(tx);
+        state.register.amount = Math.round((state.register.amount + total) * 100) / 100;
+        storageSet('sam-transactions', state.transactions);
+        storageSet('sam-register', state.register);
+        render();
+        close();
+        showToast('Sale saved — ' + formatMoney(tx.total));
+      }
+    });
+  }
+
+  function openMenuItemModal(existing){
+    var isEdit = !!existing;
+    openModal({
+      title: isEdit ? 'Edit menu item' : 'Add menu item',
+      bodyHTML:
+        '<div class="form-group"><label for="miName">Item name</label>' +
+        '<input type="text" id="miName" placeholder="e.g. Jerk Chicken" value="' + (isEdit ? escapeHTML(existing.name) : '') + '"></div>' +
+        '<div class="form-group"><label for="miPrice">Price</label>' +
+        '<input type="number" id="miPrice" inputmode="decimal" step="0.01" min="0" placeholder="0.00" value="' + (isEdit ? existing.price : '') + '"></div>' +
+        '<div class="form-group"><label for="miCat">Tag / Category</label>' +
+        '<input type="text" id="miCat" placeholder="e.g. Drink, Lunch & Dinner" value="' + (isEdit ? escapeHTML(existing.category || '') : '') + '"></div>',
+      primaryLabel: isEdit ? 'Save changes' : 'Add item',
+      onOpen:function(){ focusField('miName'); },
+      onPrimary:function(close){
+        var name = (document.getElementById('miName').value || '').trim();
+        var price = parseFloat(document.getElementById('miPrice').value);
+        var cat = (document.getElementById('miCat').value || 'Other').trim();
+        if (!name || !(price > 0)) return;
+        if (isEdit) updateMenuItem(existing.id, name, Math.round(price*100)/100, cat);
+        else addMenuItem(name, Math.round(price*100)/100, cat);
+        close();
+        render();
+        showToast(isEdit ? 'Item updated' : 'Item added to menu');
+      }
+    });
+  }
+
+  function openSetRegisterModal(){
+    openModal({
+      title:'Set register amount',
+      bodyHTML:
+        '<p class="form-hint" style="margin-top:0;">Use this at the start of the day to set your starting cash.</p>' +
+        '<div class="form-group"><label for="regAmount">Amount</label>' +
+        '<input type="number" id="regAmount" inputmode="decimal" step="0.01" min="0" value="' + state.register.amount + '"></div>',
+      primaryLabel:'Save',
+      onOpen:function(){ focusField('regAmount'); },
+      onPrimary:function(close){
+        var amt = parseFloat(document.getElementById('regAmount').value);
+        if (isNaN(amt) || amt < 0) return;
+        setRegisterAmount(amt);
+        close();
+        render();
+        showToast('Register set to ' + formatMoney(amt));
+      }
+    });
+  }
+
+  function openCashAdjustModal(sign){
+    var title = sign > 0 ? 'Add cash to register' : 'Take cash out';
+    openModal({
+      title:title,
+      bodyHTML:
+        '<div class="form-group"><label for="adjAmount">Amount</label>' +
+        '<input type="number" id="adjAmount" inputmode="decimal" step="0.01" min="0" placeholder="0.00"></div>' +
+        '<div class="form-group"><label for="adjNote">Reason (optional)</label>' +
+        '<input type="text" id="adjNote" placeholder="e.g. Change fund"></div>',
+      primaryLabel: sign > 0 ? 'Add cash' : 'Remove cash',
+      onOpen:function(){ focusField('adjAmount'); },
+      onPrimary:function(close){
+        var amt = parseFloat(document.getElementById('adjAmount').value);
+        if (!(amt > 0)) return;
+        var note = document.getElementById('adjNote').value.trim();
+        addAdjustment(sign * Math.round(amt*100)/100, note);
+        close();
+        render();
+        showToast(sign > 0 ? 'Cash added' : 'Cash removed');
+      }
+    });
+  }
+
+  /* ================= Change calculator ================= */
+  function buildChangeHTML(total, given){
+    var diffCents = toCents(given) - toCents(total);
+    if (diffCents >= 0){
+      var parts = billBreakdown(diffCents);
+      var chips = parts.map(function(p){ return '<span class="chip">' + p.count + ' × ' + p.label + '</span>'; }).join('');
+      return '<div class="change-box ok"><div class="cb-label">Change due</div>' +
+        '<div class="cb-amount money">' + formatMoney(diffCents/100) + '</div>' +
+        (parts.length ? '<div class="breakdown">' + chips + '</div>' : '') +
+        '</div>';
+    } else {
+      return '<div class="change-box warn"><div class="cb-label">Still needed</div>' +
+        '<div class="cb-amount money">' + formatMoney(-diffCents/100) + '</div>' +
+        '</div>';
+    }
+  }
+  function updateChangeDisplay(){
+    var box = document.getElementById('changeBox');
+    var total = cartTotal();
+    var given = parseFloat(state.cashGivenInput) || 0;
+    
+    if (box) {
+      box.innerHTML = buildChangeHTML(total, given);
+    }
+    
+    var modalPrimary = document.getElementById('modalPrimary');
+    if (modalPrimary && document.getElementById('cashPaymentSection')) {
+      var canComplete = (state.paymentMethod !== 'cash') || (toCents(given) >= toCents(total));
+      modalPrimary.disabled = !canComplete;
+    }
+  }
+
+  /* ================= Render: header / nav ================= */
+  function renderChrome(){
+    document.getElementById('headerCash').textContent = formatMoney(state.register.amount);
+    var tabs = [
+      {id:'register', label:'Register', icon:ICONS.cash},
+      {id:'sale', label:'New Sale', icon:ICONS.plusCircle},
+      {id:'history', label:'History', icon:ICONS.clock},
+      {id:'menu', label:'Menu', icon:ICONS.list}
+    ];
+    tabs.forEach(function(t){
+      var el = document.getElementById('nav' + t.id.charAt(0).toUpperCase() + t.id.slice(1));
+      el.innerHTML = t.icon + '<span>' + t.label + '</span>';
+      el.classList.toggle('active', state.tab === t.id);
+    });
+  }
+
+  /* ================= Render: Sale tab ================= */
+  function renderSaleView(){
+    var html = '';
+    
+    // Group by category
+    var groups = {};
+    state.menu.forEach(function(item){
+      var cat = item.category || 'Other';
+      if(!groups[cat]) groups[cat] = [];
+      groups[cat].push(item);
+    });
+
+    if (Object.keys(groups).length === 0) {
+        html += '<h2 class="section-title">Menu — tap to add</h2>';
+        html += '<div class="empty-hint">No menu items yet. Head to Menu tab to add some.</div>';
+    } else {
+        Object.keys(groups).forEach(function(cat){
+          html += '<span class="category-title">' + escapeHTML(cat) + '</span>';
+          html += '<div class="menu-grid">';
+          groups[cat].forEach(function(item){
+            var selected = state.selectedItemIds.indexOf(item.id) !== -1;
+            html += '<button class="menu-tile' + (selected ? ' selected' : '') + '" data-action="toggle-select" data-id="' + item.id + '">' +
+              '<span class="item-name">' + escapeHTML(item.name) + '</span>' +
+              '<span class="item-price money">' + formatMoney(item.price) + '</span>' +
+              '</button>';
+          });
+          html += '</div>';
+        });
+    }
+
+    html += '<div class="menu-grid" style="margin-top: 10px;">';
+    html += '<button class="menu-tile add-custom" data-action="open-custom-item">' + ICONS.plus + '<span>Custom item</span></button>';
+    html += '</div>';
+
+    if (state.selectedItemIds.length > 0){
+      html += '<div class="selection-actions"><div class="btn-row">';
+      html += '<button class="btn btn-outline" data-action="clear-selection">Clear</button>';
+      html += '<button class="btn btn-primary btn-block" data-action="open-select-payment">Done (' + state.selectedItemIds.length + ')</button>';
+      html += '</div></div>';
+    }
+
+    if (state.cart.length > 0){
+      var total = cartTotal();
+      html += '<h2 class="section-title" style="margin-top:24px;">This sale</h2>';
+      html += '<div class="card">';
+      state.cart.forEach(function(c){
+        html += '<div class="cart-line">' +
+          '<span class="name">' + escapeHTML(c.name) + '</span>' +
+          '<span class="qty-ctrl">' +
+            '<button class="qty-btn" data-action="cart-dec" data-id="' + c.id + '">' + ICONS.minus + '</button>' +
+            '<span class="qty-num">' + c.qty + '</span>' +
+            '<button class="qty-btn" data-action="cart-inc" data-id="' + c.id + '">' + ICONS.plus + '</button>' +
+          '</span>' +
+          '<span class="line-price money">' + formatMoney(c.price * c.qty) + '</span>' +
+          '<button class="icon-btn danger" data-action="cart-remove" data-id="' + c.id + '">' + ICONS.x + '</button>' +
+          '</div>';
+      });
+      html += '<div class="cart-total-row"><span class="label">Total</span><span class="amount money">' + formatMoney(total) + '</span></div>';
+      html += '</div>';
+
+      html += '<div class="sticky-cta"><button class="btn btn-primary btn-block" data-action="open-checkout">Charge ' + formatMoney(total) + '</button></div>';
+    }
+    document.getElementById('view').innerHTML = html;
+  }
+
+  /* ================= Render: Register tab ================= */
+  function renderRegisterView(){
+    var today = dayKey(new Date().toISOString());
+    var todays = state.transactions.filter(function(t){ return dayKey(t.time) === today; });
+    var todaySales = todays.reduce(function(s,t){ return s + t.total; }, 0);
+
+    var html = '';
+    html += '<div class="register-hero">' +
+      '<div class="label">Current register</div>' +
+      '<div class="amount money">' + formatMoney(state.register.amount) + '</div>' +
+      '<div class="btn-row">' +
+        '<button class="btn btn-outline" data-action="open-set-register">Set amount</button>' +
+        '<button class="btn btn-outline" data-action="open-add-cash">Add cash</button>' +
+        '<button class="btn btn-outline" data-action="open-remove-cash">Remove cash</button>' +
+      '</div>' +
+      '<div class="stat-row">' +
+        '<div class="stat"><div class="stat-num money">' + formatMoney(todaySales) + '</div><div class="stat-label">Sales today</div></div>' +
+        '<div class="stat"><div class="stat-num money">' + todays.length + '</div><div class="stat-label">Transactions</div></div>' +
+      '</div>' +
+      '</div>';
+    document.getElementById('view').innerHTML = html;
+  }
+
+  /* ================= Render: History tab ================= */
+  function renderHistoryView(){
+    var entries = [];
+    state.transactions.forEach(function(t){ entries.push({kind:'sale', time:t.time, data:t}); });
+    state.adjustments.forEach(function(a){ entries.push({kind:'adj', time:a.time, data:a}); });
+    entries.sort(function(a,b){ return new Date(b.time) - new Date(a.time); });
+
+    if (entries.length === 0){
+      document.getElementById('view').innerHTML = '<div class="empty-hint">No sales yet — head to New Sale to log your first order.</div>';
+      return;
+    }
+
+    var groups = [];
+    var lastKey = null;
+    entries.forEach(function(e){
+      var k = dayKey(e.time);
+      if (k !== lastKey){
+        groups.push({key:k, entries:[]});
+        lastKey = k;
+      }
+      groups[groups.length-1].entries.push(e);
+    });
+
+    var html = '';
+    groups.forEach(function(g){
+      var daySales = g.entries.filter(function(e){ return e.kind==='sale'; }).reduce(function(s,e){ return s + e.data.total; }, 0);
+      html += '<div class="day-header"><span class="day-label">' + dayLabel(g.key) + '</span><span class="day-total money">' + formatMoney(daySales) + ' sold</span></div>';
+      g.entries.forEach(function(e){
+        if (e.kind === 'sale'){
+          var t = e.data;
+          html += '<div class="ticket">' +
+            '<div class="ticket-row"><span class="ticket-time">' + fmtTime(t.time) + '</span>' +
+            '<span class="tag ' + (t.payment==='cash'?'tag-cash':'tag-card') + '">' + (t.payment==='cash'?'Cash':'Card') + '</span></div>' +
+            '<div class="ticket-dash"></div>';
+          t.items.forEach(function(it){
+            html += '<div class="ticket-line"><span><span class="qty">' + it.qty + '×</span>' + escapeHTML(it.name) + '</span><span class="money">' + formatMoney(it.price * it.qty) + '</span></div>';
+          });
+          html += '<div class="ticket-foot"><span class="ticket-total money">' + formatMoney(t.total) + '</span>' +
+            '<button class="icon-btn danger" data-action="delete-tx" data-id="' + t.id + '">' + ICONS.trash + '</button></div>';
+          html += '</div>';
+        } else {
+          var a = e.data;
+          html += '<div class="ticket">' +
+            '<div class="ticket-row"><span class="ticket-time">' + fmtTime(a.time) + '</span>' +
+            '<span class="tag ' + (a.amount>=0?'tag-adj-add':'tag-adj-remove') + '">' + (a.amount>=0?'Cash added':'Cash removed') + '</span></div>' +
+            '<div class="ticket-foot"><span>' + escapeHTML(a.note) + '</span>' +
+            '<span class="ticket-total money">' + formatMoney(a.amount) + '</span></div>' +
+            '<div style="text-align:right;margin-top:4px;"><button class="icon-btn danger" data-action="delete-adj" data-id="' + a.id + '">' + ICONS.trash + '</button></div>' +
+            '</div>';
+        }
+      });
+    });
+    document.getElementById('view').innerHTML = html;
+  }
+
+  /* ================= Render: Menu tab ================= */
+  function renderMenuView(){
+    var html = '';
+    html += '<h2 class="section-title">Menu items</h2>';
+    if (state.menu.length === 0){
+      html += '<div class="empty-hint">No menu items yet. Add your first dish below.</div>';
+    } else {
+      var groups = {};
+      state.menu.forEach(function(item){
+        var cat = item.category || 'Other';
+        if(!groups[cat]) groups[cat] = [];
+        groups[cat].push(item);
+      });
+
+      Object.keys(groups).forEach(function(cat){
+          html += '<div class="card" style="padding:6px 16px; margin-bottom: 12px;">';
+          html += '<div style="margin-bottom:8px; margin-top:8px;"><span class="category-title" style="margin:0;">' + escapeHTML(cat) + '</span></div>';
+          groups[cat].forEach(function(item, i){
+            html += '<div class="cart-line">' +
+              '<span class="name">' + escapeHTML(item.name) + '</span>' +
+              '<span class="line-price money" style="width:auto;margin-right:6px;">' + formatMoney(item.price) + '</span>' +
+              '<button class="icon-btn" data-action="edit-item" data-id="' + item.id + '">' + ICONS.edit + '</button>' +
+              '<button class="icon-btn danger" data-action="delete-item" data-id="' + item.id + '">' + ICONS.trash + '</button>' +
+              '</div>';
+          });
+          html += '</div>';
+      });
+    }
+    html += '<div style="margin-top:14px; margin-bottom: 24px;"><button class="btn btn-outline btn-block" data-action="open-add-item">' + ICONS.plus + ' Add menu item</button></div>';
+
+    html += '<h2 class="section-title">Data Backup</h2>';
+    html += '<div class="card" style="padding:16px;">';
+    html += '<p style="font-size:13px; color:var(--ink-soft); margin-bottom:12px;">Save or restore your menu, sales history, and register data to a new device.</p>';
+    html += '<div class="btn-row">';
+    html += '<button class="btn btn-outline" data-action="export-data" style="flex:1;">Export</button>';
+    html += '<button class="btn btn-outline" data-action="import-data" style="flex:1;">Import</button>';
+    html += '</div>';
+    html += '<input type="file" id="importFile" style="display:none;" accept=".json">';
+    html += '</div>';
+
+    document.getElementById('view').innerHTML = html;
+  }
+
+  /* ================= Master render ================= */
+  function render(){
+    if (!state.loaded) return;
+    renderChrome();
+    if (state.tab === 'sale') renderSaleView();
+    else if (state.tab === 'register') renderRegisterView();
+    else if (state.tab === 'history') renderHistoryView();
+    else if (state.tab === 'menu') renderMenuView();
+  }
+
+  function findMenuItem(id){ return state.menu.find(function(m){ return m.id === id; }); }
+
+  /* ================= Event delegation ================= */
+  document.addEventListener('click', function(e){
+    var el = e.target.closest('[data-action]');
+    if (!el || !state.loaded) return;
+    var action = el.dataset.action;
+    var id = el.dataset.id;
+
+    switch(action){
+      case 'switch-tab':
+        state.tab = el.dataset.tab;
+        render();
+        break;
+      case 'toggle-select':
+        toggleSelectedItem(id);
+        break;
+      case 'open-select-payment':
+        openSelectedItemsPaymentModal();
+        break;
+      case 'clear-selection':
+        clearSelectedItems();
+        break;
+      case 'open-custom-item':
+        openCustomItemModal();
+        break;
+      case 'cart-inc':
+        changeQty(id, 1);
+        break;
+      case 'cart-dec':
+        changeQty(id, -1);
+        break;
+      case 'cart-remove':
+        removeCartLine(id);
+        break;
+      case 'open-checkout':
+        openCheckoutModal();
+        break;
+      case 'set-payment':
+        state.paymentMethod = el.dataset.method;
+        if (document.getElementById('modalOverlay')) {
+            document.querySelectorAll('.pay-opt').forEach(function(btn) { btn.classList.remove('active'); });
+            el.classList.add('active');
+            var cashSec = document.getElementById('cashPaymentSection');
+            if(cashSec) cashSec.style.display = state.paymentMethod === 'cash' ? 'block' : 'none';
+            updateChangeDisplay();
+        } else {
+            render();
+        }
+        break;
+      case 'quick-cash':
+        var val = el.dataset.value;
+        var total = cartTotal();
+        state.cashGivenInput = (val === 'exact') ? total.toFixed(2) : String(Number(val));
+        var ci = document.getElementById('cashGivenInput');
+        if(ci) ci.value = state.cashGivenInput;
+        updateChangeDisplay();
+        break;
+      case 'open-set-register':
+        openSetRegisterModal();
+        break;
+      case 'open-add-cash':
+        openCashAdjustModal(1);
+        break;
+      case 'open-remove-cash':
+        openCashAdjustModal(-1);
+        break;
+      case 'delete-tx':
+        deleteTransaction(id);
+        break;
+      case 'delete-adj':
+        deleteAdjustment(id);
+        break;
+      case 'open-add-item':
+        openMenuItemModal(null);
+        break;
+      case 'edit-item':
+        openMenuItemModal(findMenuItem(id));
+        break;
+      case 'delete-item':
+        deleteMenuItem(id);
+        break;
+      case 'export-data':
+        var data = {
+            menu: state.menu,
+            transactions: state.transactions,
+            adjustments: state.adjustments,
+            register: state.register
+        };
+        var blob = new Blob([JSON.stringify(data)], {type: "application/json"});
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'sam-flavor-data.json';
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('Data exported!');
+        break;
+      case 'import-data':
+        var fileInput = document.getElementById('importFile');
+        if(fileInput) {
+            fileInput.onchange = function(evt) {
+                var file = evt.target.files[0];
+                if(!file) return;
+                var reader = new FileReader();
+                reader.onload = function(ev) {
+                    try {
+                        var parsed = JSON.parse(ev.target.result);
+                        if(parsed.menu) state.menu = parsed.menu;
+                        if(parsed.transactions) state.transactions = parsed.transactions;
+                        if(parsed.adjustments) state.adjustments = parsed.adjustments;
+                        if(parsed.register) state.register = parsed.register;
+                        storageSet('sam-menu', state.menu);
+                        storageSet('sam-transactions', state.transactions);
+                        storageSet('sam-adjustments', state.adjustments);
+                        storageSet('sam-register', state.register);
+                        render();
+                        showToast('Data imported successfully!');
+                    } catch(err) {
+                        showToast('Error reading backup file.');
+                    }
+                };
+                reader.readAsText(file);
+            };
+            fileInput.click();
+        }
+        break;
+    }
+  });
+
+  document.addEventListener('input', function(e){
+    if (e.target && e.target.id === 'cashGivenInput'){
+      state.cashGivenInput = e.target.value;
+      updateChangeDisplay();
+    }
+  });
+
+  /* ================= Boot ================= */
+  init();
+})();
+</script>
+</body>
+</html>
