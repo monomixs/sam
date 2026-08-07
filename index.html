@@ -28,6 +28,7 @@
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   body{
+    -webkit-tap-highlight-color: transparent;
     font-family:var(--sans);
     background:var(--paper);
     color:var(--ink);
@@ -172,6 +173,17 @@
   .btn-block{width:100%;}
   .btn-sm{padding:7px 11px;font-size:12.5px;border-radius:8px;}
   .btn-row{display:flex;gap:8px;}
+  .search-bar{margin-bottom:14px;}
+  .search-input{
+    width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;
+    font-size:15px;color:var(--ink);background:var(--card);
+  }
+  .filter-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+  .filter-tag{
+    padding:6px 10px;border-radius:999px;border:1.5px solid var(--line);
+    background:var(--card);color:var(--ink-soft);font-size:12px;font-weight:700;cursor:pointer;
+  }
+  .filter-tag.active-tag{background:var(--callaloo);color:#fff;border-color:var(--callaloo);}
   .icon-btn{
     background:none;border:none;color:var(--ink-soft);cursor:pointer;
     padding:6px;border-radius:8px;display:inline-flex;
@@ -538,6 +550,10 @@
     register:{amount:0},
     cart:[],           // {id,name,price,qty}
     selectedItemQtys: {},
+    saleSearch:'',
+    historySearch:'',
+    menuSearch:'',
+    menuCategoryFilter:'All',
     tab:'sale',
     paymentMethod:'cash',
     cashGivenInput:'',
@@ -606,6 +622,17 @@
 
   function clearSelectedItems(){
     state.selectedItemQtys = {};
+    render();
+  }
+
+  function uniqueCategories(){
+    var cats = {};
+    state.menu.forEach(function(item){ cats[item.category || 'Other'] = true; });
+    return Object.keys(cats).sort();
+  }
+
+  function setMenuCategoryFilter(category){
+    state.menuCategoryFilter = category;
     render();
   }
 
@@ -1259,6 +1286,8 @@
       groups[cat].push(item);
     });
 
+    html += '<div class="search-bar"><input id="saleSearchInput" class="search-input" type="search" placeholder="Search items…" value="' + escapeHTML(state.saleSearch) + '"></div>';
+
     if (Object.keys(groups).length === 0) {
         html += '<h2 class="section-title">Menu — tap to add</h2>';
         html += '<div class="empty-hint">No menu items yet. Head to Menu tab to add some.</div>';
@@ -1267,6 +1296,7 @@
           html += '<span class="category-title">' + escapeHTML(cat) + '</span>';
           html += '<div class="menu-grid">';
           groups[cat].forEach(function(item){
+            if (state.saleSearch && item.name.toLowerCase().indexOf(state.saleSearch.toLowerCase()) === -1) return;
             var qty = state.selectedItemQtys[item.id];
             html += '<div class="menu-tile' + (qty ? ' selected' : '') + '" role="button" tabindex="0" data-action="toggle-select" data-id="' + item.id + '">' +
               '<span class="item-name">' + escapeHTML(item.name) + '</span>' +
@@ -1350,14 +1380,27 @@
     state.adjustments.forEach(function(a){ entries.push({kind:'adj', time:a.time, data:a}); });
     entries.sort(function(a,b){ return new Date(b.time) - new Date(a.time); });
 
+    html += '<div class="search-bar"><input id="historySearchInput" class="search-input" type="search" placeholder="Search history…" value="' + escapeHTML(state.historySearch) + '"></div>';
     if (entries.length === 0){
       document.getElementById('view').innerHTML = '<div class="empty-hint">No sales yet — head to New Sale to log your first order.</div>';
       return;
     }
 
+    var filteredEntries = entries.filter(function(e){
+      if (!state.historySearch) return true;
+      var term = state.historySearch.toLowerCase();
+      if (e.kind === 'sale'){
+        return e.data.items.some(function(it){ return it.name.toLowerCase().indexOf(term) !== -1; }) || e.data.payment.toLowerCase().indexOf(term) !== -1 || formatMoney(e.data.total).indexOf(term) !== -1;
+      }
+      return e.data.note.toLowerCase().indexOf(term) !== -1 || formatMoney(e.data.amount).indexOf(term) !== -1;
+    });
+    if (filteredEntries.length === 0){
+      document.getElementById('view').innerHTML = '<div class="empty-hint">No matching history entries found.</div>';
+      return;
+    }
     var groups = [];
     var lastKey = null;
-    entries.forEach(function(e){
+    filteredEntries.forEach(function(e){
       var k = dayKey(e.time);
       if (k !== lastKey){
         groups.push({key:k, entries:[]});
@@ -1402,12 +1445,22 @@
   function renderMenuView(){
     var html = '';
     html += '<h2 class="section-title">Menu items</h2>';
+    html += '<div class="search-bar"><input id="menuSearchInput" class="search-input" type="search" placeholder="Search menu…" value="' + escapeHTML(state.menuSearch) + '"></div>';
+    var categories = uniqueCategories();
+    html += '<div class="filter-tags">';
+    html += '<button class="filter-tag' + (state.menuCategoryFilter === 'All' ? ' active-tag' : '') + '" data-action="set-menu-filter" data-category="All">All</button>';
+    categories.forEach(function(cat){
+      html += '<button class="filter-tag' + (state.menuCategoryFilter === cat ? ' active-tag' : '') + '" data-action="set-menu-filter" data-category="' + escapeHTML(cat) + '">' + escapeHTML(cat) + '</button>';
+    });
+    html += '</div>';
     if (state.menu.length === 0){
       html += '<div class="empty-hint">No menu items yet. Add your first dish below.</div>';
     } else {
       var groups = {};
       state.menu.forEach(function(item){
+        if (state.menuSearch && item.name.toLowerCase().indexOf(state.menuSearch.toLowerCase()) === -1) return;
         var cat = item.category || 'Other';
+        if (state.menuCategoryFilter !== 'All' && cat !== state.menuCategoryFilter) return;
         if(!groups[cat]) groups[cat] = [];
         groups[cat].push(item);
       });
@@ -1537,6 +1590,9 @@
       case 'delete-item':
         deleteMenuItem(id);
         break;
+      case 'set-menu-filter':
+        setMenuCategoryFilter(el.dataset.category || 'All');
+        break;
       case 'export-data':
         var data = {
             menu: state.menu,
@@ -1586,9 +1642,35 @@
   });
 
   document.addEventListener('input', function(e){
-    if (e.target && e.target.id === 'cashGivenInput'){
+    if (!e.target) return;
+    if (e.target.id === 'cashGivenInput'){
       state.cashGivenInput = e.target.value;
       updateChangeDisplay();
+      return;
+    }
+
+    var searchKeys = {
+      saleSearchInput: 'saleSearch',
+      historySearchInput: 'historySearch',
+      menuSearchInput: 'menuSearch'
+    };
+
+    if (searchKeys[e.target.id]){
+      var key = searchKeys[e.target.id];
+      state[key] = e.target.value;
+      var inputId = e.target.id;
+      var start = e.target.selectionStart;
+      var end = e.target.selectionEnd;
+      render();
+      setTimeout(function(){
+        var next = document.getElementById(inputId);
+        if (next){
+          next.focus();
+          if (typeof next.setSelectionRange === 'function' && start != null && end != null){
+            next.setSelectionRange(start, end);
+          }
+        }
+      }, 0);
     }
   });
 
