@@ -268,6 +268,19 @@
     flex-direction:row;
   }
   .menu-tile.add-custom svg{width:16px;height:16px;}
+  .qty-controls{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-top:8px;
+  }
+  .qty-num{
+    min-width:24px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:700;
+  }
 
   .empty-hint{
     color:var(--ink-soft);
@@ -524,7 +537,7 @@
     adjustments:[],    // {id,time,amount,note}
     register:{amount:0},
     cart:[],           // {id,name,price,qty}
-    selectedItemIds: [],
+    selectedItemQtys: {},
     tab:'sale',
     paymentMethod:'cash',
     cashGivenInput:'',
@@ -568,22 +581,31 @@
   }
 
   function selectedItems(){
-    return state.menu.filter(function(item){ return state.selectedItemIds.indexOf(item.id) !== -1; });
+    return state.menu.filter(function(item){ return state.selectedItemQtys[item.id] != null; });
   }
 
   function selectedTotal(){
-    return selectedItems().reduce(function(sum,item){ return sum + item.price; }, 0);
+    return selectedItems().reduce(function(sum,item){ return sum + item.price * state.selectedItemQtys[item.id]; }, 0);
   }
 
   function toggleSelectedItem(id){
-    var idx = state.selectedItemIds.indexOf(id);
-    if (idx === -1) state.selectedItemIds.push(id);
-    else state.selectedItemIds.splice(idx, 1);
+    if (state.selectedItemQtys[id] == null){
+      state.selectedItemQtys[id] = 1;
+    } else {
+      delete state.selectedItemQtys[id];
+    }
+    render();
+  }
+
+  function adjustSelectedItemQty(id, delta){
+    if (state.selectedItemQtys[id] == null) return;
+    var qty = Math.max(1, state.selectedItemQtys[id] + delta);
+    state.selectedItemQtys[id] = qty;
     render();
   }
 
   function clearSelectedItems(){
-    state.selectedItemIds = [];
+    state.selectedItemQtys = {};
     render();
   }
 
@@ -902,7 +924,8 @@
     }
 
     var itemRows = items.map(function(item){
-      return '<div class="ticket-line"><span>' + escapeHTML(item.name) + '</span><span class="money">' + formatMoney(item.price) + '</span></div>';
+      var qty = state.selectedItemQtys[item.id] || 1;
+      return '<div class="ticket-line"><span><span class="qty">' + qty + '×</span>' + escapeHTML(item.name) + '</span><span class="money">' + formatMoney(item.price * qty) + '</span></div>';
     }).join('');
 
     openModal({
@@ -970,7 +993,7 @@
         var tx = {
           id: genId(),
           time: new Date().toISOString(),
-          items: items.map(function(item){ return {name:item.name, price:item.price, qty:1}; }),
+          items: items.map(function(item){ return {name:item.name, price:item.price, qty: state.selectedItemQtys[item.id] || 1}; }),
           total: Math.round(total * 100) / 100,
           payment: paymentMethod,
           cashGiven: paymentMethod === 'cash' ? Math.round(Number(cashGiven) * 100) / 100 : null,
@@ -978,7 +1001,7 @@
         };
         state.transactions.push(tx);
         state.register.amount = Math.round((state.register.amount + tx.total) * 100) / 100;
-        state.selectedItemIds = [];
+        state.selectedItemQtys = {};
         storageSet('sam-transactions', state.transactions);
         storageSet('sam-register', state.register);
         render();
@@ -1244,11 +1267,18 @@
           html += '<span class="category-title">' + escapeHTML(cat) + '</span>';
           html += '<div class="menu-grid">';
           groups[cat].forEach(function(item){
-            var selected = state.selectedItemIds.indexOf(item.id) !== -1;
-            html += '<button class="menu-tile' + (selected ? ' selected' : '') + '" data-action="toggle-select" data-id="' + item.id + '">' +
+            var qty = state.selectedItemQtys[item.id];
+            html += '<div class="menu-tile' + (qty ? ' selected' : '') + '" role="button" tabindex="0" data-action="toggle-select" data-id="' + item.id + '">' +
               '<span class="item-name">' + escapeHTML(item.name) + '</span>' +
-              '<span class="item-price money">' + formatMoney(item.price) + '</span>' +
-              '</button>';
+              '<span class="item-price money">' + formatMoney(item.price) + '</span>';
+            if (qty){
+              html += '<div class="qty-controls">' +
+                '<button type="button" class="qty-btn" data-action="selected-item-qty" data-id="' + item.id + '" data-delta="-1">' + ICONS.minus + '</button>' +
+                '<span class="qty-num">' + qty + '</span>' +
+                '<button type="button" class="qty-btn" data-action="selected-item-qty" data-id="' + item.id + '" data-delta="1">' + ICONS.plus + '</button>' +
+              '</div>';
+            }
+            html += '</div>';
           });
           html += '</div>';
         });
@@ -1258,10 +1288,11 @@
     html += '<button class="menu-tile add-custom" data-action="open-custom-item">' + ICONS.plus + '<span>Custom item</span></button>';
     html += '</div>';
 
-    if (state.selectedItemIds.length > 0){
+    var selectedCount = Object.keys(state.selectedItemQtys).length;
+    if (selectedCount > 0){
       html += '<div class="selection-actions"><div class="btn-row">';
       html += '<button class="btn btn-outline" data-action="clear-selection">Clear</button>';
-      html += '<button class="btn btn-primary btn-block" data-action="open-select-payment">Done (' + state.selectedItemIds.length + ')</button>';
+      html += '<button class="btn btn-primary btn-block" data-action="open-select-payment">Done (' + selectedCount + ')</button>';
       html += '</div></div>';
     }
 
@@ -1442,6 +1473,10 @@
         break;
       case 'clear-selection':
         clearSelectedItems();
+        break;
+      case 'selected-item-qty':
+        var delta = Number(el.dataset.delta) || 0;
+        adjustSelectedItemQty(id, delta);
         break;
       case 'open-custom-item':
         openCustomItemModal();
