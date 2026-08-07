@@ -776,15 +776,21 @@
   }
 
   function setRegisterAmount(amount){
-    state.register.amount = Math.round(amount*100)/100;
+    var normalized = Math.max(0, amount);
+    state.register.amount = Math.round(normalized*100)/100;
     storageSet('sam-register', state.register);
   }
   function addAdjustment(amount, note){
+    var normalized = state.register.amount + amount;
+    if (normalized < 0) {
+      return false;
+    }
     var adj = {id:genId(), time:new Date().toISOString(), amount:Math.round(amount*100)/100, note: note || (amount >= 0 ? 'Cash added' : 'Cash removed')};
     state.adjustments.push(adj);
-    state.register.amount = Math.round((state.register.amount + amount)*100)/100;
+    state.register.amount = Math.round(normalized*100)/100;
     storageSet('sam-adjustments', state.adjustments);
     storageSet('sam-register', state.register);
+    return true;
   }
 
   /* ================= Actions: menu ================= */
@@ -1218,7 +1224,11 @@
         var amt = parseFloat(document.getElementById('adjAmount').value);
         if (!(amt > 0)) return;
         var note = document.getElementById('adjNote').value.trim();
-        addAdjustment(sign * Math.round(amt*100)/100, note);
+        var success = addAdjustment(sign * Math.round(amt*100)/100, note);
+        if (!success) {
+          showToast('Cannot remove more cash than available.');
+          return;
+        }
         close();
         render();
         showToast(sign > 0 ? 'Cash added' : 'Cash removed');
