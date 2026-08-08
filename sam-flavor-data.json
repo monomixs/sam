@@ -1,0 +1,31 @@
+{
+  "menu": [
+    {"id": "msjecvx2i22dgo", "name": "Spaghetti", "price": 12.00, "category": "Breakfast"},
+    {"id": "msjecvx9y3900n", "name": "Egg Sandwich", "price": 8.00, "category": "Breakfast"},
+    {"id": "msjecvx9ae9imc", "name": "Pate Kode", "price": 8.00, "category": "Breakfast"},
+    {"id": "msjecvx9wlxc3n", "name": "Taco's", "price": 6.99, "category": "Breakfast"},
+    {"id": "msjecvx9bcv0jm", "name": "Purified Water", "price": 1.00, "category": "Drink"},
+    {"id": "msjecvxa2tb4yy", "name": "Soda", "price": 1.50, "category": "Drink"},
+    {"id": "msjecvxaafhzqp", "name": "Orange Juice", "price": 4.99, "category": "Drink"},
+    {"id": "msjecvxalmz2fs", "name": "Lemonade", "price": 5.00, "category": "Drink"},
+    {"id": "msjecvxalmz2ft", "name": "Coke", "price": 2.00, "category": "Drink"},
+    {"id": "msjecvxalmz2fu", "name": "Sprite", "price": 2.00, "category": "Drink"},
+    {"id": "msjecvxalmz2fv", "name": "Sport Shake", "price": 3.00, "category": "Drink"},
+    {"id": "msjecvxalmz2fw", "name": "Energy Drinks", "price": 3.00, "category": "Drink"},
+    {"id": "msjecvxalmz2fx", "name": "12 Wing W/ Fries", "price": 14.99, "category": "Lunch & Dinner"},
+    {"id": "msjecvxalmz2fy", "name": "Griyo Complete", "price": 15.00, "category": "Lunch & Dinner"},
+    {"id": "msjecvxalmz2fz", "name": "Fried Chicken Rice & Beans", "price": 15.00, "category": "Lunch & Dinner"},
+    {"id": "msjecvxalmz2g0", "name": "Fried Cabrit W/ White Rice", "price": 18.99, "category": "Lunch & Dinner"},
+    {"id": "msjecvxalmz2g1", "name": "Chicken in sauce, Rice & Beans", "price": 15.99, "category": "Lunch & Dinner"},
+    {"id": "msjecvxalmz2g2", "name": "Fried Turkey White rice beans sauce", "price": 16.00, "category": "Lunch & Dinner"},
+    {"id": "msjecvxalmz2g3", "name": "Red Snapper Fish Complete", "price": 20.00, "category": "Lunch & Dinner"},
+    {"id": "msjecvxalmz2g4", "name": "Fritay", "price": 15.00, "category": "Lunch & Dinner"},
+    {"id": "msjecvxalmz2g5", "name": "Bouyon", "price": 15.99, "category": "Special Chak Samedi"},
+    {"id": "msjecvxalmz2g6", "name": "TomTom", "price": 15.00, "category": "Special Chak Samedi"},
+    {"id": "msjecvxalmz2g7", "name": "Fritay", "price": 18.50, "category": "Special Chak Samedi"},
+    {"id": "msjecvxalmz2g8", "name": "Zorey", "price": 9.99, "category": "Special Chak Samedi"}
+  ],
+  "transactions": [],
+  "adjustments": [],
+  "register": {"amount": 0}
+}
