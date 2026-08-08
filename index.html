@@ -667,13 +667,50 @@
       storageGet('sam-menu', null),
       storageGet('sam-transactions', []),
       storageGet('sam-adjustments', []),
-      storageGet('sam-register', null)
+      storageGet('sam-register', null),
+      fetch('sam-flavor-data.json').then(function(res){
+        if(res.ok) return res.json();
+        return null;
+      }).catch(function(){ return null; })
     ]).then(function(results){
-      var menu = results[0], transactions = results[1], adjustments = results[2], register = results[3];
-      state.menu = menu || [];
+      var localMenu = results[0];
+      var transactions = results[1];
+      var adjustments = results[2];
+      var localRegister = results[3];
+      var defaultData = results[4];
+
+      if (localMenu !== null) {
+        state.menu = localMenu;
+      } else if (defaultData && defaultData.menu) {
+        state.menu = defaultData.menu;
+        storageSet('sam-menu', state.menu);
+      } else {
+        state.menu = [];
+      }
+
       state.transactions = transactions || [];
       state.adjustments = adjustments || [];
-      state.register = register || {amount:0};
+
+      if (localRegister !== null) {
+        state.register = localRegister;
+      } else if (defaultData && defaultData.register) {
+        state.register = defaultData.register;
+        storageSet('sam-register', state.register);
+      } else {
+        state.register = {amount: 0};
+      }
+
+      if (defaultData) {
+        if (!storageGet('sam-transactions', null) && defaultData.transactions) {
+          state.transactions = defaultData.transactions;
+          storageSet('sam-transactions', state.transactions);
+        }
+        if (!storageGet('sam-adjustments', null) && defaultData.adjustments) {
+          state.adjustments = defaultData.adjustments;
+          storageSet('sam-adjustments', state.adjustments);
+        }
+      }
+
       state.loaded = true;
       render();
     });
@@ -1390,9 +1427,10 @@
     state.adjustments.forEach(function(a){ entries.push({kind:'adj', time:a.time, data:a}); });
     entries.sort(function(a,b){ return new Date(b.time) - new Date(a.time); });
 
+    var html = '';
     html += '<div class="search-bar"><input id="historySearchInput" class="search-input" type="search" placeholder="Search history…" value="' + escapeHTML(state.historySearch) + '"></div>';
     if (entries.length === 0){
-      document.getElementById('view').innerHTML = '<div class="empty-hint">No sales yet — head to New Sale to log your first order.</div>';
+      document.getElementById('view').innerHTML = html + '<div class="empty-hint">No sales yet — head to New Sale to log your first order.</div>';
       return;
     }
 
@@ -1405,7 +1443,7 @@
       return e.data.note.toLowerCase().indexOf(term) !== -1 || formatMoney(e.data.amount).indexOf(term) !== -1;
     });
     if (filteredEntries.length === 0){
-      document.getElementById('view').innerHTML = '<div class="empty-hint">No matching history entries found.</div>';
+      document.getElementById('view').innerHTML = html + '<div class="empty-hint">No matching history entries found.</div>';
       return;
     }
     var groups = [];
@@ -1419,7 +1457,6 @@
       groups[groups.length-1].entries.push(e);
     });
 
-    var html = '';
     groups.forEach(function(g){
       var daySales = g.entries.filter(function(e){ return e.kind==='sale'; }).reduce(function(s,e){ return s + e.data.total; }, 0);
       html += '<div class="day-header"><span class="day-label">' + dayLabel(g.key) + '</span><span class="day-total money">' + formatMoney(daySales) + ' sold</span></div>';
